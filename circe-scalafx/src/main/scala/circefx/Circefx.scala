@@ -1,21 +1,22 @@
 package circefx
 
-import fx._
-import io.circe._
-import io.circe.parser._
 import cats._
 import cats.data._
 import cats.implicits._
+import fx.{_, given}
+import io.circe._
+import io.circe.parser._
+
 
 object Circefx:
-  def decodeTest[A](c: io.circe.HCursor)(using d: Decoder[A], cx: Control[DecodingFailure]): A =
+
+  def decodeTest[E, A](c: io.circe.HCursor)(
+      using d: Decoder[A],
+      cx: Control[NonEmptyList[E] | DecodingFailure]): A =
     d(c).bind
 
-  def parsing[R, A](s: String)(using cx: Control[R], d: Decoder[A]): A =
-    decode(parse(s).bind).bind
-
-
-  // object extensionTest:
-    // extension [E, A](s: ValidatedNel[E, A])
-    //   def bind(using Control[NonEmptyList[E]]): A =
-    //     s.fold(_.shift, identity)
+  def parsing[E, A](s: String)(
+      using cx: Control[NonEmptyList[E] | ParsingFailure | DecodingFailure],
+      d: Decoder[A]): A =
+    val parsed = parse(s).bind
+    parsed.as[A].bind
